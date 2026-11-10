@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HCP match check</title>
+  <meta name="description" content="An agent that matches CRM physician rows to a provider registry, links only on agreeing evidence, and leaves you the unclear ones. Independent prototype on synthetic data.">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <p class="kicker">HCP match check</p>
+    <h1>Match every CRM physician to the right provider. <span>You only see the unclear ones.</span></h1>
+    <div class="bar">
+      <div id="samples" class="seg" role="group" aria-label="CRM export"></div>
+      <button id="rerun" class="ghost" type="button">Run again</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="run" aria-live="polite">
+    <div class="progress"><i id="prog"></i></div>
+    <div id="counts" class="counts"></div>
+  </section>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <div id="tabs" class="tabs" role="tablist"></div>
+      <button id="addrow" class="ghost dark" type="button">+ Test a row</button>
+    </div>
+    <form id="tryform" class="tryform" hidden autocomplete="off">
+      <input name="name" placeholder="Name, e.g. Dr. Mike Rodriguez" required aria-label="Name">
+      <input name="specialty" placeholder="Specialty" aria-label="Specialty">
+      <input name="account" placeholder="Account, e.g. St Mary Med Ctr" aria-label="Account">
+      <input name="city" placeholder="City" aria-label="City">
+      <select name="state" id="trystate" aria-label="State"></select>
+      <input name="npi" placeholder="NPI (optional)" inputmode="numeric" aria-label="NPI">
+      <button class="cta" type="submit">Check</button>
+      <p id="tryhint" class="hint"></p>
+    </form>
+    <div id="table" class="table" role="table" aria-label="CRM rows"></div>
+  </section>
+
+  <section class="more">
+    <details>
+      <summary>How it decides</summary>
+      <ol class="how">
+        <li><b>Read</b> the row: drop "Dr." and credentials, handle "Last, First", map nicknames (Mike → Michael), site aliases (St Mary Med Ctr → Saint Mary Medical Center) and specialty wording through fixed tables.</li>
+        <li><b>Check the NPI</b>: 10 digits and a Luhn check digit computed with the 80840 prefix. A failed check is flagged as a typo and never used.</li>
+        <li><b>Search</b> the registry in the same state: same last name, one typo away, or first and last swapped, plus whoever owns a typed NPI.</li>
+        <li><b>Weigh</b> name, NPI, current site, past site, city and specialty as separate evidence. Another person's NPI, a different specialty or middle initial counts against.</li>
+        <li><b>Link only if</b> the name and a second fact agree, nothing counts against, and no namesake passes too. Otherwise it's yours.</li>
+        <li><b>Then</b> flag deactivated NPIs, accounts that aren't a recent site (a likely move) and two rows for one person. Changes are drafted, never written.</li>
+      </ol>
+      <p class="fine">All rules, no AI model. In production a model could propose matches for messy rows, but only these same evidence rules could accept one.</p>
+    </details>
+    <details id="evaldetails">
+      <summary>How it was tested <span id="evalsum" class="fine"></span></summary>
+      <div id="evalbody"></div>
+    </details>
+    <details open>
+      <summary>Limitations</summary>
+      <ul class="limits">
+        <li>Synthetic data: registry, sites and CRM exports come from a seeded generator. Synthetic NPIs start with 2, a range not yet issued, so none is a real person's.</li>
+        <li>Nicknames, site aliases and specialties outside the fixed tables aren't understood; those rows come to you.</li>
+        <li>The evidence rules are mine. They trade more rows for you against zero wrong links.</li>
+        <li>A move can't be flagged until the row is linked, so ambiguous rows that moved are caught only after you pick.</li>
+      </ul>
+    </details>
+  </section>
+</main>
+
+<div id="tray" class="tray" hidden>
+  <div class="wrap tray-in">
+    <span id="traytext"></span>
+    <span class="tray-actions"><button id="copycsv" class="ghost dark" type="button">Copy</button><button id="dlcsv" class="cta" type="button">Download changes.csv</button></span>
+  </div>
+</div>
+
+<footer class="foot">
+  <div class="wrap">Independent prototype. Not affiliated with AcuityMD. Synthetic data only, built by Sneh. Runs entirely in your browser: no tracking, no third-party requests, nothing written to any CRM.</div>
+</footer>
+<script src="sample-data.js"></script>
+<script src="results-data.js"></script>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
